@@ -1,0 +1,2 @@
+get specific post by id, - forgot to parseInt the req.params.id.
+patch posts, default values syntaxing.
