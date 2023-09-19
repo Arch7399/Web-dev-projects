@@ -1,4 +1,4 @@
-import "dotenv/config";
+import md5 from "md5";
 import express from "express";
 import ejs from "ejs";
 import bodyParser from "body-parser";
@@ -20,8 +20,6 @@ const userSchema = new mongoose.Schema({
     password: String
 });
 
-userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedFields: ["password"]});
-
 const Credentials = mongoose.model("credentials", userSchema);
 
 app.get("/", (req, res) => {
@@ -42,7 +40,7 @@ app.get("/secrets", (req, res) => {
 
 app.post("/register", (req, res) => {
     const userName = _.lowerCase(req.body.username);
-    const passWord = req.body.password;
+    const passWord = md5(req.body.password);
 
     Credentials.findOne({username: userName}).then(function(foundName){
         if(foundName){
@@ -62,7 +60,7 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
     const userName = _.lowerCase(req.body.username);
-    const passWord = req.body.password;
+    const passWord = md5(req.body.password);
 
     Credentials.findOne({username: userName}).then(function(foundName){
         if(foundName){
