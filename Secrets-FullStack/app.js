@@ -1,13 +1,13 @@
-import md5 from "md5";
+import bcrypt, { hash } from "bcrypt";
 import express from "express";
 import ejs from "ejs";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import _ from "lodash";
-import encrypt from "mongoose-encryption";
 
 const app = express();
 const port = 3000;
+const saltRounds = 10;
 
 app.use(express.static("public"));
 app.set("view engine", "ejs");
@@ -40,40 +40,44 @@ app.get("/secrets", (req, res) => {
 
 app.post("/register", (req, res) => {
     const userName = _.lowerCase(req.body.username);
-    const passWord = md5(req.body.password);
+    const passWord = req.body.password;
 
-    Credentials.findOne({username: userName}).then(function(foundName){
-        if(foundName){
-            console.log("This username is already taken...");
-            res.redirect("/register");
-        } else {
-            const newUser = new Credentials({
-                username: userName,
-                password: passWord
-            });
-            newUser.save();
-            console.log("User registered successfully..!");
-            res.redirect("/secrets");
-        }
+    bcrypt.hash(passWord, saltRounds, function(err, hash){
+        Credentials.findOne({username: userName}).then(function(foundName){
+            if(foundName){
+                console.log("This username is already taken...");
+                res.render("register");
+            } else {
+                const newUser = new Credentials({
+                    username: userName,
+                    password: hash
+                });
+                newUser.save();
+                console.log("User registered successfully..!");
+                res.render("secrets");
+            }
+        });
     });
 });
 
 app.post("/login", (req, res) => {
     const userName = _.lowerCase(req.body.username);
-    const passWord = md5(req.body.password);
+    const passWord = req.body.password;
 
     Credentials.findOne({username: userName}).then(function(foundName){
         if(foundName){
-            if(foundName.password === passWord){
-                console.log("User logged in successfully..!");
-            res.redirect("/secrets");
-            } else {
-                console.log("Wrong Password");
-                res.redirect("/login");
-            }
+            bcrypt.compare(passWord, foundName.password, function(err, result){
+                if(result === true){
+                    console.log("User logged in successfully..!");
+                    res.render("secrets");
+                } else {
+                    console.log("Wrong Password");
+                    res.render("login");
+                }
+            });
         } else {
             console.log("Wrong credentials");
-            res.redirect("/login");
+            res.render("login");
         }
     });
 });
