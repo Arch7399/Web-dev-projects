@@ -42,16 +42,17 @@ const Credentials = mongoose.model("credentials", userSchema);
 
 passport.use(Credentials.createStrategy());
 passport.serializeUser(function(user, cb) {
-    process.nextTick(function() {
-      return cb(null, user.id);
+  process.nextTick(function() {
+    return cb(null, {
+      id: user.id
     });
+  });
 });
-  
-passport.deserializeUser(function(id, cb) {
-    app.get('SELECT * FROM users WHERE id = ?', [ id ], function(err, user) {
-      if (err) { return cb(err); }
-      return cb(null, user);
-    });
+
+passport.deserializeUser(function(user, cb) {
+  process.nextTick(function() {
+    return cb(null, user);
+  });
 });
 
 passport.use(new GoogleStrategy({
