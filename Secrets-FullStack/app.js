@@ -32,7 +32,8 @@ mongoose.connect("mongodb://0.0.0.0:27017/userAuthDB");
 const userSchema = new mongoose.Schema({
     username: String,
     password: String,
-    googleId: String
+    googleId: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -44,7 +45,9 @@ passport.use(Credentials.createStrategy());
 passport.serializeUser(function(user, cb) {
   process.nextTick(function() {
     return cb(null, {
-      id: user.id
+      id: user.id,
+      username: user.username,
+      picture: user.picture
     });
   });
 });
@@ -91,12 +94,40 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/secrets", (req, res) => {
-   
     if(req.isAuthenticated){
         res.render("secrets");
     } else {
         res.redirect("/login");
     }
+});
+
+app.get("/submit", (req, res) => {
+    if(req.isAuthenticated){
+        res.render("submit");
+    } else {
+        res.redirect("/login");
+    }
+});
+
+app.post("/submit", (req, res) => {
+    const newSecret = req.body.secret;
+    console.log(req.user);
+
+    Credentials.findById(req.user.id).then(function(foundUser){
+        if(foundUser){
+                foundUser.secret = newSecret;
+                foundUser.save().then(function(){
+                    res.redirect("/secrets");
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+            }
+        }
+    )
+    .catch((err) => {
+        console.log(err);
+    });
 });
 
 app.get("/logout", (req,res) => {
